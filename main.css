@@ -8,4 +8,5 @@ body {
 
 .sample-list {
   font-size: 14px;
+  list-style-type: none;
 }

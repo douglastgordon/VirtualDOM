@@ -23,16 +23,23 @@ const createElement = node => {
 
   const el = document.createElement(type);
   props && setProps(el, props);
-  // debugger
   node.children.map(createElement).forEach(el.appendChild.bind(el)); // point free
   return el;
 };
 
 const setProps = (el, props) => {
   Object.entries(props).forEach(([name, value]) => {
-    name = name === "className" ? "class" : name;
-    el.setAttribute(name, value);
+    setProp(el, name, value);
   });
+};
+
+const setProp = (el, name, value) => {
+  name = name === "className" ? "class" : name;
+  el.setAttribute(name, value);
+};
+
+const removeProp = (el, name) => {
+  el.removeAttrbiute(name);
 };
 
 const CREATE = "CREATE";
@@ -53,6 +60,27 @@ const diffChildren = (newNode, oldNode) => {
   return patches;
 };
 
+const REMOVE_PROP = "REMOVE_PROP";
+const SET_PROP = "SET_PROP";
+const diffProps = (newProps, oldProps) => {
+  const props = Object.assign({}, newProps, oldProps);
+  return Object.keys(props).reduce((acc, name) => {
+    const newValue = newProps[name];
+    const oldValue = oldProps[name];
+    if (!newValue) {
+      return [...acc, { type: REMOVE_PROP, name, value: oldValue }];
+    } else if (!oldValue || newValue !== oldValue) {
+      return [...acc, { type: SET_PROP, name, value: newValue }];
+    }
+  }, []);
+
+  const patchesLength = Math.max(newNode.props.length, oldNode.props.length);
+  for (let i = 0; i < patchesLength; i += 1) {
+    patches[i] = diff(newNode);
+  }
+  return patches;
+};
+
 const diff = (newNode, oldNode) => {
   if (!oldNode) {
     return { type: CREATE, newNode };
@@ -64,7 +92,24 @@ const diff = (newNode, oldNode) => {
     return { type: REPLACE, newNode };
   }
   if (newNode.type) {
-    return { type: UPDATE, children: diffChildren(newNode, oldNode) };
+    return {
+      type: UPDATE,
+      children: diffChildren(newNode, oldNode),
+      props: diffProps(newNode.props, oldNode.props)
+    };
+  }
+};
+
+const patchProps = (parent, patches) => {
+  for (let i = 0; i < patches.length; i += 1) {
+    const propPatch = patches[i];
+    const { type, name, value } = propPatch;
+    if (type === SET_PROP) {
+      setProp(parent, name, value);
+    }
+    if (type === REMOVE_PROP) {
+      removeProp(parent, name);
+    }
   }
 };
 
@@ -90,7 +135,8 @@ const patch = (parent, patches, index = 0) => {
       }
     case UPDATE:
       {
-        const { children } = patches;
+        const { children, props } = patches;
+        patchProps(el, props);
         for (let i = 0; i < children.length; i += 1) {
           patch(el, children[i], i);
         }

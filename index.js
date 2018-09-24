@@ -12,36 +12,6 @@ const h = (type, props={}, ...children) => ({
   children: children.flat(1),
 })
 
-const createElement = node => {
-  const { type, props, children } = node
-  if (typeof node === "string") return document.createTextNode(node)
-
-  const el = document.createElement(type)
-  props && setProps(el, props)
-  node.children.map(createElement).forEach(el.appendChild.bind(el)) // point free
-  return el
-}
-
-const setProps = (el, props) => {
-  Object.entries(props).forEach(([name, value]) => {
-    setProp(el, name, value)
-  })
-}
-
-const setProp = (el, name, value) => {
-  name = (name === "className" ? "class" : name)
-  el.setAttribute(name, value)
-}
-
-const removeProp = (el, name) => {
-  el.removeAttrbiute(name)
-}
-
-const CREATE = "CREATE"
-const REMOVE = "REMOVE"
-const REPLACE = "REPLACE"
-const UPDATE = "UPDATE"
-
 const changed = (node1, node2) => {
   return (
     typeof node !== typeof node ||
@@ -65,8 +35,6 @@ const diffChildren = (newNode, oldNode) => {
   return patches
 }
 
-const REMOVE_PROP = "REMOVE_PROP"
-const SET_PROP = "SET_PROP"
 const diffProps = (newProps, oldProps) => {
   const props = Object.assign({}, newProps, oldProps)
   return Object.keys(props).reduce((acc, name) => {
@@ -78,17 +46,6 @@ const diffProps = (newProps, oldProps) => {
       return [...acc, {type: SET_PROP, name, value: newValue}]
     }
   }, [])
-
-  const patchesLength = Math.max(
-    newNode.props.length,
-    oldNode.props.length,
-  )
-  for (let i = 0; i < patchesLength; i += 1) {
-    patches[i] = diff(
-      newNode
-    )
-  }
-  return patches
 }
 
 const diff = (newNode, oldNode) => {
@@ -121,6 +78,38 @@ const patchProps = (parent, patches) => {
       removeProp(parent, name)
     }
   }
+}
+
+const CREATE = "CREATE"
+const REMOVE = "REMOVE"
+const REPLACE = "REPLACE"
+const UPDATE = "UPDATE"
+const REMOVE_PROP = "REMOVE_PROP"
+const SET_PROP = "SET_PROP"
+
+const createElement = node => {
+  const { type, props, children } = node
+  if (typeof node === "string") return document.createTextNode(node)
+
+  const el = document.createElement(type)
+  props && setProps(el, props)
+  node.children.map(createElement).forEach(el.appendChild.bind(el)) // point free
+  return el
+}
+
+const setProps = (el, props) => {
+  Object.entries(props).forEach(([name, value]) => {
+    setProp(el, name, value)
+  })
+}
+
+const setProp = (el, name, value) => {
+  name = (name === "className" ? "class" : name)
+  el.setAttribute(name, value)
+}
+
+const removeProp = (el, name) => {
+  el.removeAttrbiute(name)
 }
 
 const patch = (parent, patches, index=0) => {
